@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FIFA 2026 SimPA</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_points_table">Points Table</string>
+    <string name="tab_credits">Credits</string>
+    <string name="simulate_match">Simulate Match</string>
+    <string name="auto_simulate">Auto Simulate</string>
+    <string name="match_details">Match Details</string>
+    <string name="injury_event">Injury Event</string>
+    <string name="weather_shift">Weather Shift</string>
+    <string name="half_time_adjustment">Half-time Adjustment</string>
+    <string name="card_risk">Card Risk</string>
+    <string name="group_standings">Group Standings</string>
+    <string name="loading">Loading...</string>
+    <string name="error_loading">Error loading data</string>
+    <string name="retry">Retry</string>
+    <string name="live_matches">Live Matches</string>
+    <string name="upcoming_fixtures">Upcoming Fixtures</string>
+    <string name="historical_data">Historical Data</string>
+    <string name="goals_scored">Goals Scored</string>
+    <string name="goals_conceded">Goals Conceded</string>
+    <string name="goal_difference">GD</string>
+    <string name="points">Pts</string>
+    <string name="played">Pld</string>
+    <string name="won">W</string>
+    <string name="drawn">D</string>
+    <string name="lost">L</string>
+    <string name="developer_profile">Developer Profile</string>
+    <string name="github">GitHub</string>
+    <string name="linkedin">LinkedIn</string>
+    <string name="x_twitter">X / Twitter</string>
+</resources>
