@@ -3,12 +3,12 @@ package com.fifa.simpa.presentation.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.filled.Home as HomeIcon
-import androidx.compose.material.icons.outlined.Home as HomeOutlined
-import androidx.compose.material.icons.filled.Leaderboard as PointsTableIcon
-import androidx.compose.material.icons.outlined.Leaderboard as PointsTableOutlined
-import androidx.compose.material.icons.filled.Info as CreditsIcon
-import androidx.compose.material.icons.outlined.Info as CreditsOutlined
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.filled.Leaderboard
+import androidx.compose.material.icons.outlined.Leaderboard
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
@@ -20,20 +20,20 @@ sealed class Screen(
     data object Home : Screen(
         route = "home",
         title = "Home",
-        selectedIcon = HomeIcon,
-        unselectedIcon = HomeOutlined
+        selectedIcon = Icons.Filled.Home,
+        unselectedIcon = Icons.Outlined.Home
     )
     data object PointsTable : Screen(
         route = "pointstable",
         title = "Points Table",
-        selectedIcon = PointsTableIcon,
-        unselectedIcon = PointsTableOutlined
+        selectedIcon = Icons.Filled.Leaderboard,
+        unselectedIcon = Icons.Outlined.Leaderboard
     )
     data object Credits : Screen(
         route = "credits",
         title = "Credits",
-        selectedIcon = CreditsIcon,
-        unselectedIcon = CreditsOutlined
+        selectedIcon = Icons.Filled.Info,
+        unselectedIcon = Icons.Outlined.Info
     )
 }
 

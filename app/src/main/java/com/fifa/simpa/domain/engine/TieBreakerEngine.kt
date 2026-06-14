@@ -91,9 +91,13 @@ class TieBreakerEngine {
             }
         }
 
-        return compareValues(bPoints, aPoints).let { if (it != 0) return@Comparator it }
-            .let { compareValues(bGD, aGD).let { if (it != 0) return@Comparator it } }
-            .let { 0 } // If still tied, fall through to next criterion
+        val pointsComparison = compareValues(bPoints, aPoints)
+        if (pointsComparison != 0) return pointsComparison
+
+        val gdComparison = compareValues(bGD, aGD)
+        if (gdComparison != 0) return gdComparison
+
+        return 0 // If still tied, fall through to next criterion
     }
 
     /**

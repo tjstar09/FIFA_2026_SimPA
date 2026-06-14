@@ -30,13 +30,12 @@ class MonteCarloMatchEngine(
     /**
      * Run a full match simulation with minute-by-minute Monte Carlo process.
      */
-    suspend fun simulateMatch(
+    fun simulateMatch(
         match: Match,
         random: Random = Random
     ): MatchSimulationResult {
         val isKnockout = match.stage.ordinal >= MatchStage.ROUND_OF_16.ordinal
         val totalMinutes = if (isKnockout) 120 else 90
-        val extraTime = isKnockout
 
         // Calculate base expected goals for the match
         val baseLambdaHome = poissonEngine.calculateExpectedGoals(
@@ -73,7 +72,7 @@ class MonteCarloMatchEngine(
         var awayMorale = 0.5f
 
         // Apply weather modifiers to pacing
-        val (possessionMod, shotMod, passMod, fatigueAccel) = weatherEngine.applyWeatherEffects(match.weather)
+        val (_, shotMod, _, _) = weatherEngine.applyWeatherEffects(match.weather)
 
         // Apply referee strictness
         val refereeCoeff = refereeEngine.getFoulProbabilityMultiplier(match.refereeStrictness)
@@ -89,7 +88,6 @@ class MonteCarloMatchEngine(
 
         // Minute-by-minute simulation
         for (minute in 1..totalMinutes) {
-            val currentMinute = minute
             val isHalftime = minute == 45
 
             // Half time break
@@ -121,11 +119,12 @@ class MonteCarloMatchEngine(
 
                 // Update possession percentages
                 if (possessionTeam == match.homeTeam.id) {
-                    homePossession = (homePossession + (50 - homePossession) * 0.1 + random.nextInt(-3, 3)).coerceIn(35, 65)
+                    homePossession = (homePossession + (50 - homePossession) * 0.1 + random.nextInt(-3, 3)).toInt().coerceIn(35, 65)
+                    awayPossession = 100 - homePossession
                 } else {
-                    awayPossession = (awayPossession + (50 - awayPossession) * 0.1 + random.nextInt(-3, 3)).coerceIn(35, 65)
+                    awayPossession = (awayPossession + (50 - awayPossession) * 0.1 + random.nextInt(-3, 3)).toInt().coerceIn(35, 65)
+                    homePossession = 100 - awayPossession
                 }
-                awayPossession = 100 - homePossession
             }
 
             // Fatigue value for this minute
@@ -140,7 +139,7 @@ class MonteCarloMatchEngine(
                 if (tackleSuccess) {
                     possessionTeam = tacklingTeamId
                     events.add(SimulatedEvent(
-                        minute = currentMinute,
+                        minute = minute,
                         eventType = EventType.TACKLE,
                         description = "${tacklingTeam.name} win the ball back!",
                         teamId = tacklingTeamId,
@@ -150,29 +149,28 @@ class MonteCarloMatchEngine(
 
                 // Foul chance
                 if (!tackleSuccess && random.nextDouble() < 0.25 * refereeCoeff) {
-                    val foulTeam = tacklingTeam
                     val isYellow = random.nextDouble() < 0.12 * refereeCoeff
                     val isSecondYellow = false
 
                     if (isYellow) {
-                        val card = CardEvent("", "${foulTeam.name} player", currentMinute, true, isSecondYellow)
-                        if (foulTeam.id == match.homeTeam.id) homeCards.add(card)
+                        val card = CardEvent("", "${tacklingTeam.name} player", minute, true, isSecondYellow)
+                        if (tacklingTeam.id == match.homeTeam.id) homeCards.add(card)
                         else awayCards.add(card)
 
                         events.add(SimulatedEvent(
-                            minute = currentMinute,
+                            minute = minute,
                             eventType = EventType.CARD,
-                            description = "Yellow card for ${foulTeam.name}",
-                            teamId = foulTeam.id,
+                            description = "Yellow card for ${tacklingTeam.name}",
+                            teamId = tacklingTeam.id,
                             impact = 0.4
                         ))
                     }
 
                     events.add(SimulatedEvent(
-                        minute = currentMinute,
+                        minute = minute,
                         eventType = EventType.FOUL,
-                        description = "Foul committed by ${foulTeam.name}",
-                        teamId = foulTeam.id,
+                        description = "Foul committed by ${tacklingTeam.name}",
+                        teamId = tacklingTeam.id,
                         impact = 0.1
                     ))
                 }
@@ -192,7 +190,7 @@ class MonteCarloMatchEngine(
                     possessionTeam = if (passTeamId == match.homeTeam.id) match.awayTeam.id else match.homeTeam.id
 
                     events.add(SimulatedEvent(
-                        minute = currentMinute,
+                        minute = minute,
                         eventType = EventType.PASS,
                         description = "Poor pass by ${passTeam.name}, possession lost",
                         teamId = passTeamId,
@@ -263,7 +261,7 @@ class MonteCarloMatchEngine(
                     val goalEvent = GoalEvent(
                         playerId = "${shootingTeam.id}-P",
                         playerName = "${shootingTeam.name} Player",
-                        minute = currentMinute,
+                        minute = minute,
                         xG = shotXG
                     )
                     if (possessionTeam == match.homeTeam.id) {
@@ -279,7 +277,7 @@ class MonteCarloMatchEngine(
                     }
 
                     events.add(SimulatedEvent(
-                        minute = currentMinute,
+                        minute = minute,
                         eventType = EventType.GOAL,
                         description = "GOAL! ${shootingTeam.name} scores! (xG: ${"%.2f".format(shotXG)})",
                         teamId = shootingTeam.id,
@@ -287,7 +285,7 @@ class MonteCarloMatchEngine(
                     ))
                 } else if (onTarget) {
                     events.add(SimulatedEvent(
-                        minute = currentMinute,
+                        minute = minute,
                         eventType = EventType.SAVE,
                         description = "Save by ${defendingTeam.name} goalkeeper! ($shotType, xG: ${"%.2f".format(shotXG)})",
                         teamId = defendingTeam.id,
@@ -295,7 +293,7 @@ class MonteCarloMatchEngine(
                     ))
                 } else {
                     events.add(SimulatedEvent(
-                        minute = currentMinute,
+                        minute = minute,
                         eventType = EventType.SHOT,
                         description = "Shot by ${shootingTeam.name} goes wide. ($shotType, xG: ${"%.2f".format(shotXG)})",
                         teamId = shootingTeam.id,
@@ -311,7 +309,7 @@ class MonteCarloMatchEngine(
             if (minute in 55..80 && random.nextInt(15) == 0) {
                 val subTeam = if (random.nextBoolean()) match.homeTeam else match.awayTeam
                 substitutions.add(SubstitutionEvent(
-                    minute = currentMinute,
+                    minute = minute,
                     playerOffId = "${subTeam.id}-OFF",
                     playerOffName = "${subTeam.name} Player",
                     playerOnId = "${subTeam.id}-ON",
@@ -319,7 +317,7 @@ class MonteCarloMatchEngine(
                     teamId = subTeam.id
                 ))
                 events.add(SimulatedEvent(
-                    minute = currentMinute,
+                    minute = minute,
                     eventType = EventType.SUBSTITUTION,
                     description = "Substitution for ${subTeam.name}",
                     teamId = subTeam.id,
@@ -333,14 +331,14 @@ class MonteCarloMatchEngine(
                 val injury = InjuryEvent(
                     playerId = "${injuredTeam.id}-INJ",
                     playerName = "${injuredTeam.name} Player",
-                    minute = currentMinute,
+                    minute = minute,
                     severity = InjurySeverity.MODERATE
                 )
                 if (injuredTeam.id == match.homeTeam.id) homeInjuries.add(injury)
                 else awayInjuries.add(injury)
 
                 events.add(SimulatedEvent(
-                    minute = currentMinute,
+                    minute = minute,
                     eventType = EventType.INJURY,
                     description = "Injury for ${injuredTeam.name}! Medical staff on the pitch.",
                     teamId = injuredTeam.id,
@@ -350,7 +348,7 @@ class MonteCarloMatchEngine(
 
             // Momentum shifts
             val momentumDelta = momentumEngine.calculateMomentumShift(
-                currentMinute, homeScore, awayScore, totalMinutes
+                minute, homeScore, awayScore, totalMinutes
             )
             if (momentumDelta != 0.0) {
                 if (momentumDelta > 0) {
@@ -358,7 +356,7 @@ class MonteCarloMatchEngine(
                     currentHomeLambda *= (1.0 + momentumDelta)
                 } else {
                     awayMorale = (awayMorale + 0.03f).coerceAtMost(1.0f)
-                    currentAwayLambda *= (1.0 + Math.abs(momentumDelta))
+                    currentAwayLambda *= (1.0 + abs(momentumDelta))
                 }
             }
         }
@@ -375,7 +373,7 @@ class MonteCarloMatchEngine(
         var homePenaltyScore: Int? = null
         var awayPenaltyScore: Int? = null
 
-        if (extraTime && homeScore == awayScore) {
+        if (isKnockout && homeScore == awayScore) {
             events.add(SimulatedEvent(
                 minute = totalMinutes,
                 eventType = EventType.PENALTY_SHOOTOUT,
@@ -444,10 +442,9 @@ class MonteCarloMatchEngine(
     private fun simulatePenaltyShootout(random: Random): Pair<Int, Int> {
         var homePenalties = 0
         var awayPenalties = 0
-        val maxRounds = 10 // 5 each initially
 
         // First 5 rounds
-        for (round in 1..5) {
+        repeat(5) {
             // Home kicks
             val homeBaseProb = 0.78
             if (random.nextDouble() < homeBaseProb) homePenalties++
